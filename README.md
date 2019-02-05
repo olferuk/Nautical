@@ -2,10 +2,20 @@
 
 The tool to make lightweight Telegram bots from plain Python functions
 
+🇷🇺 [Здесь](#README_ru.md) есть русскоязычная версия этого README.
+
 ## Table of contents
 
 * [Installation](#Installation)
 * [Tutorial](#Tutorial)
+  * [0. Start, help and other default commands](#0-Start-help-and-other-default-commands)
+  * [1. Command registering](#1-Command-registering)
+  * [2. Sending images](#2-Sending-images)
+  * [3. Receiving images sent by user](#3-Receiving-images-sent-by-user)
+  * [4. Controlling the execution with parameters](#4-Controlling-the-execution-with-parameters)
+  * [5. Reacting to buttons pressed](#5-Reacting-to-buttons-pressed)
+  * [6. Logging events to SQLite](#6-Logging-events-to-SQLite)
+* [Contributors](#Contributors)
 
 ## Installation
 [Up](#Table-of-contents)
@@ -161,7 +171,11 @@ __NB__: parameters are individual for each user, so assigning different values t
 ### 5. Reacting to buttons pressed
 [Up](#Table-of-contents)
 
-
-
 ### 6. Logging events to SQLite
 [Up](#Table-of-contents)
+
+## Contributors
+[Up](#Table-of-contents)
+
+* Alexander Olferuk [[vk](#https://vk.com/a_olferuk)|[github](#https://github.com/EnlightenedCSF)]
+* Danila Paluhin [[vk](#https://vk.com/dpaluhin)|[github](#https://github.com/Palushok)]
