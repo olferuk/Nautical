@@ -15,11 +15,12 @@
     * [6. Логирование событий в SQLite](#6-Логирование-событий-в-SQLite)
 * [Авторы](#Авторы)
 
+
 ## Установка
 [К содержанию](#Содержание)
 
 ```bash
-git clone
+git clone https://github.com/EnlightenedCSF/Spindrift.git
 cd <cloned_repo>
 pip install .
 ```
@@ -177,5 +178,5 @@ __NB__: набор параметров у каждого пользовател
 ## Авторы
 [К содержанию](#Содержание)
 
-* Ольферук Александр [[vk](#https://vk.com/a_olferuk)|[github](#https://github.com/EnlightenedCSF)]
-* Палухин Данила [[vk](#https://vk.com/dpaluhin)|[github](#https://github.com/Palushok)]
+* Ольферук Александр ( [vk](#https://vk.com/a_olferuk) | [github](#https://github.com/EnlightenedCSF) )
+* Палухин Данила ( [vk](#https://vk.com/dpaluhin) | [github](#https://github.com/Palushok) )
