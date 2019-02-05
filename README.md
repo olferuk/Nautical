@@ -177,5 +177,5 @@ __NB__: parameters are individual for each user, so assigning different values t
 ## Contributors
 [Up](#Table-of-contents)
 
-* Alexander Olferuk ( [vk](#https://vk.com/a_olferuk) | [github](#https://github.com/EnlightenedCSF) )
-* Danila Paluhin ( [vk](#https://vk.com/dpaluhin) | [github](#https://github.com/Palushok) )
+* Alexander Olferuk ( [vk](https://vk.com/a_olferuk) | [github](https://github.com/EnlightenedCSF) )
+* Danila Paluhin ( [vk](https://vk.com/dpaluhin) | [github](https://github.com/Palushok) )
