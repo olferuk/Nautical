@@ -1,7 +1,9 @@
 from .logger import SQLiteLogger
+from .settings import ConfigLogger
 
 from PIL import Image
-from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, Filters
+from telegram.ext import (Updater, CommandHandler, MessageHandler,
+                          CallbackQueryHandler, Filters)
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from functools import partial
 from urllib.request import urlopen
@@ -11,6 +13,9 @@ import sys
 import traceback
 
 
+CONFIG = ConfigLogger()
+
+
 def make_text_handler(s):
     def f(bot, update):
         bot.send_message(chat_id=update.message.chat_id, text=s)
@@ -18,15 +23,21 @@ def make_text_handler(s):
 
 def make_photo_handler(func):
     def f(bot, update):
+        user_id = update.effective_message['from_user']['id']
+        config = CONFIG.get_config(user_id)
+
         url = bot.getFile(update.message.photo[-1].file_id).file_path
         image_file = io.BytesIO(urlopen(url).read())
         im = Image.open(image_file)
-        func(im)
+        func(im, config)
     return f
 
 def make_handler(func, buttons_intro):
     def f(bot, update):
-        msg = func()
+        user_id = update.effective_message['from_user']['id']
+        config = CONFIG.get_config(user_id)
+
+        msg = func(config)
 
         has_buttons = (msg.buttons is not None) and len(msg.buttons) > 0
         has_media = (msg.image is not None) or (msg.image_url is not None)
@@ -71,16 +82,19 @@ def make_buttons_processor(choice_confirmation_label):
                               message_id=query.message.message_id)
     return f
 
-def make_set_command(setter, confirmation_label):
+def make_set_command(confirmation_label):
     def f(bot, update):
+        user_id = update.effective_message['from_user']['id']
         key, value = update.message.text.split(' ')[1:]
-        setter(key, value)
+        CONFIG.record(user_id, key, value)
         bot.send_message(chat_id=update.message.chat_id,
                          text=confirmation_label.format(key, value))
     return f
 
-def make_params_command(vocab, no_params_label, params_title):
+def make_params_command(no_params_label, params_title):
     def f(bot, update):
+        user_id = update.effective_message['from_user']['id']
+        vocab = CONFIG.get_config(user_id=user_id)
         if len(vocab) == 0:
             total = no_params_label
         else:
@@ -93,16 +107,17 @@ def make_params_command(vocab, no_params_label, params_title):
 
 
 class TelegramBot():
-    def __init__(self, token, db_path=None):
+
+    def __init__(self, token, config_path, db_path=None):
+        global CONFIG
+        CONFIG.init(config_path)
+
         self.token = token
 
         self.logging = False
         if not (db_path is None):
             self.logger = TelegramLogger(db_path)
             self.logging = True
-
-        self.parameters = {}
-        self.fs = {}
 
         self.updater = Updater(token=self.token)
         self.dispatcher = self.updater.dispatcher
@@ -130,15 +145,12 @@ class TelegramBot():
         # /set
         confirm_label = self._param_changed_confirmation_label
         self.dispatcher.add_handler(
-            CommandHandler('set',
-                           make_set_command(self._set_param,
-                                            confirm_label)
-                          ))
+            CommandHandler('set', make_set_command(confirm_label)))
+
         # /params
         self.dispatcher.add_handler(
             CommandHandler('params',
-                           make_params_command(self.parameters,
-                                               self._no_parameters_label,
+                           make_params_command(self._no_parameters_label,
                                                self._parameters_title)
                           ))
         # Buttons
@@ -148,9 +160,10 @@ class TelegramBot():
                                 ))
         self.resume()
 
+    #  =-=-=-=-=-  COMMAND HANDLING  -=-=-=-=-=
+
     def register_command(self, name, f):
         label = self._button_press_invitation_label
-        self.fs[name] = f
         if self.command_with_name(name) is None:
             self.dispatcher.add_handler(
                 CommandHandler(name,
@@ -160,38 +173,8 @@ class TelegramBot():
             command.callback = make_handler(f, buttons_intro=label)
 
     def register_photo_handler(self, f):
-        self.fs['_'] = f
-
         self.dispatcher.add_handler(MessageHandler(Filters.photo,
                                                    make_photo_handler(f)))
-
-    def _set_text_command(self, name, return_text):
-        if len(self.dispatcher.handlers) == 0:
-            self.dispatcher.add_handler(
-                CommandHandler(name, make_text_handler(return_text))
-            )
-            return
-        was_found = False
-        for command in self.dispatcher.handlers[0]:
-            if type(command) == CommandHandler and command.command[0] == name:
-                was_found = True
-                command.callback = make_text_handler(return_text)
-        if not was_found:
-            self.dispatcher.add_handler(
-                CommandHandler(name, make_text_handler(return_text))
-            )
-
-    def _set_param(self, key, value):
-        label = self._button_press_invitation_label
-        ps = self.parameters
-        to_update = False
-        if (key not in ps) or ((key in ps) and (ps[key] != value)):
-            ps[key] = value
-            to_update = True
-        if to_update:
-            for command_name, f in self.fs.items():
-                command = self.command_with_name(command_name)
-                command.callback = make_handler(partial(f, ps), label)
 
     def command_with_name(self, name):
         for command in self.dispatcher.handlers[0]:
@@ -202,6 +185,11 @@ class TelegramBot():
     def has_command_with_name(self, name):
         return self.command_with_name(name) is None
 
+    def commands(self):
+        return [x.command[0] for x in self.dispatcher.handlers[0]]
+
+    #  =-=-=-=-=-  PAUSING  -=-=-=-=-=
+
     def stop(self):
         self.updater.stop_polling()
         self.started = False
@@ -210,8 +198,7 @@ class TelegramBot():
         self.updater.start_polling()
         self.started = True
 
-    def commands(self):
-        return [x.command[0] for x in self.dispatcher.handlers[0]]
+    #  =-=-=-=-=-  START AND HELP TEXTS  -=-=-=-=-=
 
     @property
     def starting_message():
@@ -231,16 +218,20 @@ class TelegramBot():
         self._help_text = value
         self._set_text_command('help', self._help_text)
 
-#         try:
-#             <CODE>
-#             except BaseException as ex:
-#                 ex_type, ex_value, ex_traceback = sys.exc_info()
-#                 trace_back = traceback.extract_tb(ex_traceback)
-#                 stack_trace = [('File : %s\n'
-#                                 '\tFunction: %s\n'
-#                                 '\tLine: %s\n'
-#                                 '\tMessage: %s)') % (t[0], t[1], t[2], t[3])
-#                                for t in trace_back]
-#                 print('{0} ({1})'.format(ex_type.__name__, ex_value))
-#                 for s in stack_trace:
-#                     print(s)
+    #  =-=-=-=-=-  UTILITIES  -=-=-=-=-=
+
+    def _set_text_command(self, name, return_text):
+        if len(self.dispatcher.handlers) == 0:
+            self.dispatcher.add_handler(
+                CommandHandler(name, make_text_handler(return_text))
+            )
+            return
+        was_found = False
+        for command in self.dispatcher.handlers[0]:
+            if type(command) == CommandHandler and command.command[0] == name:
+                was_found = True
+                command.callback = make_text_handler(return_text)
+        if not was_found:
+            self.dispatcher.add_handler(
+                CommandHandler(name, make_text_handler(return_text))
+            )

@@ -28,25 +28,25 @@ class SQLiteLogger:
         self.conn = sqlite3.connect(db_name)
         self._create_table(self.create_user)
         self._create_table(self.create_record)
-    
+
     def record(self, user_id, user_name, first_name, lastname, chat_id, message_id, button, meta):
-        if not self._user_contains(user_id): 
+        if not self._user_contains(user_id):
             self._new_user(user_id, user_name, first_name, lastname)
         self._new_record(user_id, chat_id, message_id, button, meta)
-    
+
     def get_user_df(self):
         return pd.read_sql_query("SELECT * FROM user", self.conn)
-    
+
     def get_record_df(self):
-        return pd.read_sql_query("SELECT * FROM record", self.conn)    
-    
+        return pd.read_sql_query("SELECT * FROM record", self.conn)
+
     def _create_table(self, create_table_sql):
         try:
             c = self.conn.cursor()
             c.execute(create_table_sql)
         except Error as e:
             print(e)
-    
+
     def _new_user(self, user_id, user_name, first_name, lastname):
         sql = ''' INSERT INTO user(user_id,user_name,first_name,last_name)
                   VALUES(?,?,?,?)'''
@@ -62,10 +62,10 @@ class SQLiteLogger:
         record = (user_id, chat_id, message_id, button, meta)
         cur.execute(sql, record)
         return cur.lastrowid
-    
+
     def _user_contains(self, user_id):
         return len(self._get_user_with_id(user_id)) > 0
-        
+
     def _get_user_with_id(self, user_id):
         cursor = self.conn.cursor()
         cursor.execute("SELECT * FROM user WHERE user_id = {0}".format(user_id))
