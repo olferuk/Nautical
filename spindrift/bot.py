@@ -25,10 +25,9 @@ def make_photo_handler(func):
     def f(bot, update):
         user_id = update.effective_message['from_user']['id']
         config = CONFIG.get_config(user_id)
-
-        url = bot.getFile(update.message.photo[-1].file_id).file_path
-        image_file = io.BytesIO(urlopen(url).read())
-        im = Image.open(image_file)
+        buffer = io.BytesIO()
+        bot.getFile(update.message.photo[-1].file_id).download(out=buffer)
+        im = Image.open(buffer)
         func(im, config)
     return f
 
