@@ -11,7 +11,7 @@ The tool to make lightweight Telegram bots from plain Python functions
 [Up](#Table-of-contents)
 
 ```
-git clone 
+git clone
 cd <cloned_repo>
 pip install .
 ```
@@ -102,11 +102,66 @@ def funny_online_meme(config={}):
 bot.register_command('online_meme', funny_online_meme)
 ```
 
-### 3. Controlling the execution with parameters
+### 3. Receiving images sent by user
 [Up](#Table-of-contents)
 
-### 4. Reacting to buttons pressed
+Processing images is easy:
+
+```
+bot = TelegramBot(token='<YOUR_TOKEN>')
+
+def process_photo(img, config={}):
+  print('I got image of size {}'.format(img))
+
+bot.register_photo_handler(process_photo)
+```
+
+Images the one receives are of type `PIL.JpegImagePlugin.JpegImageFile`.
+
+### 4. Controlling the execution with parameters
 [Up](#Table-of-contents)
 
-### 5. Logging events to SQLite
+To help bot clients control the execution, Spindrift offers parameters:
+
+```
+bot = TelegramBot(token='<YOUR_TOKEN>')
+
+def function_to_control(config):
+  x = int(config['x'])
+  print('The x value is {}'.format(x))
+  if x > 5:
+    return Message(text='x is greater than 5')
+  return Message(text='x is less than or equal to 5')
+
+bot.register_command(function_to_control)
+```
+
+It can be checked like this:
+
+```
+> /set x 2
+
+Successfully set parameter "x" to "2"
+
+> /test
+
+x is less than or equal to 5
+
+> /set x 10
+
+Successfully set parameter "x" to "2"
+
+> /test
+
+x is greater than 5
+```
+
+__NB__: parameters are individual for each user, so assigning different values to the parameter with the same name does not affect any other user's settings.
+
+### 5. Reacting to buttons pressed
+[Up](#Table-of-contents)
+
+
+
+### 6. Logging events to SQLite
 [Up](#Table-of-contents)
