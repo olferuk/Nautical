@@ -18,7 +18,7 @@
 ## Установка
 [К содержанию](#Содержание)
 
-```
+```bash
 git clone
 cd <cloned_repo>
 pip install .
@@ -28,7 +28,7 @@ pip install .
 [К содержанию](#Содержание)
 
 Подготовка:
-```
+```python
 from spindrift.bot import TelegramBot
 from spindrift.message import Message
 ```
@@ -36,13 +36,13 @@ from spindrift.message import Message
 ### 0. Start, help и другие команды по умолчанию
 [К содержанию](#Содержание)
 
-```
+```python
 bot = TelegramBot(token='<YOUR_TOKEN>')
 ```
 
 Бот уже запущен и готов к работе! Давайте проверим:
 
-```
+```bash
 > /start
 
 Hello and welcome! Start using me right away or ask for /help :)
@@ -60,7 +60,7 @@ The available commands are:
 
 Сообщения после команд `/start` и `/help`, конечно, тоже можно менять:
 
-```
+```python
 bot.starting_message = 'Другое приветственное сообщение'
 
 bot.help_message = 'Другое сообщение о коммандах'
@@ -71,7 +71,7 @@ bot.help_message = 'Другое сообщение о коммандах'
 
 Функция, которая передается в качестве команды боту __должна__ принимать словарь параметров, даже если его не использует:
 
-```
+```python
 bot = TelegramBot(token='<YOUR_TOKEN>')
 
 def hello_world(config={}):
@@ -82,7 +82,7 @@ bot.register_command('hello', hello_world)
 
 Вы можете сразу проверить работу новой команды:
 
-```
+```bash
 > /hello
 
 Hello, world!
@@ -95,7 +95,7 @@ Hello, world!
 
 Пример:
 
-```
+```python
 bot = TelegramBot(token='<YOUR_TOKEN>')
 
 def local_funny_meme(config={}):
@@ -115,7 +115,7 @@ bot.register_command('online_meme', funny_online_meme)
 
 Реагировать на загруженные изображения просто:
 
-```
+```python
 bot = TelegramBot(token='<YOUR_TOKEN>')
 
 
@@ -132,7 +132,7 @@ bot.register_photo_handler(process_photo)
 
 Для того, чтобы пользователи могли контролировать бота, Spindrift предоставляет механизм параметров:
 
-```
+```python
 bot = TelegramBot(token='<YOUR_TOKEN>')
 
 def function_to_control(config):
@@ -147,7 +147,7 @@ bot.register_command('test', function_to_control)
 
 В работоспособности можно убедиться следующим образом:
 
-```
+```bash
 > /set x 2
 
 Successfully set parameter "x" to "2"

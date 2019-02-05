@@ -10,7 +10,7 @@ The tool to make lightweight Telegram bots from plain Python functions
 ## Installation
 [Up](#Table-of-contents)
 
-```
+```python
 git clone
 cd <cloned_repo>
 pip install .
@@ -20,7 +20,7 @@ pip install .
 [Up](#Table-of-contents)
 
 Preparation:
-```
+```python
 from spindrift.bot import TelegramBot
 from spindrift.message import Message
 ```
@@ -28,13 +28,13 @@ from spindrift.message import Message
 ### 0. Start, help and other default commands
 [Up](#Table-of-contents)
 
-```
+```python
 bot = TelegramBot(token='<YOUR_TOKEN>')
 ```
 
 Bot is running and ready to listen to your commands! Let's check:
 
-```
+```bash
 > /start
 
 Hello and welcome! Start using me right away or ask for /help :)
@@ -52,7 +52,7 @@ The goal of having `/set` and `/params` command is to provide a way for a bot cl
 
 You can customize messages you recieve after `/start` or `/help` commands:
 
-```
+```python
 bot.starting_message = 'Custom hello message'
 
 bot.help_message = 'Custom help message'
@@ -63,7 +63,7 @@ bot.help_message = 'Custom help message'
 
 The first and only requirement for any function is to get `config` dict as first argument:
 
-```
+```python
 bot = TelegramBot(token='<YOUR_TOKEN>')
 
 def hello_world(config={}):
@@ -74,7 +74,7 @@ bot.register_command('hello', hello_world)
 
 And it works like so:
 
-```
+```bash
 > /hello
 
 Hello, world!
@@ -87,7 +87,7 @@ Hello, world!
 
 Here is the example:
 
-```
+```python
 bot = TelegramBot(token='<YOUR_TOKEN>')
 
 def local_funny_meme(config={}):
@@ -107,7 +107,7 @@ bot.register_command('online_meme', funny_online_meme)
 
 Processing images is easy:
 
-```
+```python
 bot = TelegramBot(token='<YOUR_TOKEN>')
 
 def process_photo(img, config={}):
@@ -123,7 +123,7 @@ Images the one receives are of type `PIL.JpegImagePlugin.JpegImageFile`.
 
 To help bot clients control the execution, Spindrift offers parameters:
 
-```
+```python
 bot = TelegramBot(token='<YOUR_TOKEN>')
 
 def function_to_control(config):
@@ -138,7 +138,7 @@ bot.register_command(function_to_control)
 
 It can be checked like this:
 
-```
+```bash
 > /set x 2
 
 Successfully set parameter "x" to "2"
