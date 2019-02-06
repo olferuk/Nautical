@@ -5,7 +5,13 @@ import sqlite3
 
 
 class SQLiteLogger:
+    """
+    Class loggs all information about user's actions and bot's answers to them to SQLite DB.   
+    """
+    
+    
     def __init__(self, db_name):
+        """Creats database with 2 tables: user and record"""  
         self._create_user = \
         '''CREATE TABLE IF NOT EXISTS user (
             user_id integer PRIMARY KEY,
@@ -61,6 +67,7 @@ class SQLiteLogger:
 
     def record(self, user_id, user_name, first_name, last_name, chat_id,
                message_id, dt, message, is_image, meta, button):
+        """Adds information about user's action to database"""
         if not self._user_contains(user_id):
             self._new_user(user_id, user_name, first_name, last_name)
         self._new_record(user_id, chat_id, message_id, dt, message, is_image,
@@ -68,9 +75,11 @@ class SQLiteLogger:
         self._conn.commit()
 
     def get_user_df(self):
+        """Retuns pandas.DataFrame with 'user' table"""
         return pd.read_sql_query("SELECT * FROM user", self._conn)
 
     def get_record_df(self):
+        """Retuns pandas.DataFrame with 'record' table"""
         return pd.read_sql_query("SELECT * FROM record", self._conn)
 
     def _user_contains(self, user_id):

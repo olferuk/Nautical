@@ -19,6 +19,7 @@ CONFIG = ConfigLogger()
 #  =-=-=-=-=-  EXTRACTING META INFO FROM THE CHAT  -=-=-=-=-=
 
 def get_user_info(update):
+    """Returns all info about the user."""
     m = update.effective_message
     uid = str(m['from_user']['id']) \
           if m['from_user']['id'] is not None \
@@ -38,6 +39,7 @@ def get_user_info(update):
     return uid, uname, fname, lname, mid, input_text, is_image
 
 def get_chat_info(update):
+    """Returns info about the message"""
     m = update.effective_message
     mid = str(m['message_id'])
     dt = str(m['date'])
@@ -45,6 +47,7 @@ def get_chat_info(update):
     return mid, dt, cid
 
 def log_answer(update, logger, meta=''):
+    """Enters the database response information to the command."""
     uid, uname, fname, lname, _, input_text, is_image = get_user_info(update)
     mid, dt, cid = get_chat_info(update)
     logger.record(uid, uname, fname, lname,
@@ -52,6 +55,7 @@ def log_answer(update, logger, meta=''):
                   input_text, is_image, meta, '')  # button
 
 def log_voting(update, logger, meta=''):
+    """Logs to the database information about clicking on the button."""
     query = update.callback_query
     btn_text, uid, uname, fname, lname, mid, input_text, is_image = query\
                                                                     .data\
@@ -174,8 +178,11 @@ def make_buttons_processor(choice_confirmation_label, logging, logger):
                               message_id=query.message.message_id)
     return f
 
-def make_set_command(confirmation_label):
+def make_set_command(confirmation_label, logging, logger):
     def f(bot, update):
+        if logging:
+            log_answer(update, logger)
+            
         user_id = update.effective_message['from_user']['id']
         key, value = update.message.text.split(' ')[1:]
         CONFIG.record(user_id, key, value)
@@ -238,7 +245,7 @@ class TelegramBot():
         # /set
         confirm_label = self._param_changed_confirmation_label
         self.dispatcher.add_handler(
-            CommandHandler('set', make_set_command(confirm_label)))
+            CommandHandler('set', make_set_command(confirm_label, self.logging, self.logger)))
 
         # /params
         self.dispatcher.add_handler(
@@ -302,7 +309,7 @@ class TelegramBot():
         self.started = False
 
     def resume(self):
-        self.updater.start_polling()
+        self.updater.start_polling(timeout=1)
         self.started = True
 
     #  =-=-=-=-=-  START AND HELP TEXTS  -=-=-=-=-=
