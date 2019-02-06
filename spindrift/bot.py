@@ -1,6 +1,7 @@
 from .logger import SQLiteLogger
 from .settings import ConfigLogger
 
+from inspect import signature
 from PIL import Image
 from telegram.ext import (Updater, CommandHandler, MessageHandler,
                           CallbackQueryHandler, Filters)
@@ -76,96 +77,66 @@ def make_text_handler(s, logging, logger):
 
 def make_photo_handler(func, buttons_intro, logging, logger):
     def f(bot, update):
-        try:
-            user_id = update.effective_message['from_user']['id']
-            config = CONFIG.get_config(user_id)
-            buffer = io.BytesIO()
-            bot.getFile(update.message.photo[-1].file_id).download(out=buffer)
-            im = Image.open(buffer)
+        user_id = update.effective_message['from_user']['id']
+        config = CONFIG.get_config(user_id)
+        buffer = io.BytesIO()
+        bot.getFile(update.message.photo[-1].file_id).download(out=buffer)
+        im = Image.open(buffer)
+        if len(signature(func).parameters) > 0:
             msg = func(im, config)
-            send_message(msg, buttons_intro, bot, update, logging, logger)
-        except BaseException as ex:
-            ex_type, ex_value, ex_traceback = sys.exc_info()
-            trace_back = traceback.extract_tb(ex_traceback)
-            stack_trace = [('File : %s\n'
-                            '\tFunction: %s\n'
-                            '\tLine: %s\n'
-                            '\tMessage: %s)') % (t[0], t[1], t[2], t[3])
-                           for t in trace_back]
-            print('{0} ({1})'.format(ex_type.__name__, ex_value))
-            for s in stack_trace:
-                print(s)
+        else:
+            msg = func(im)
+        send_message(msg, buttons_intro, bot, update, logging, logger)
     return f
 
 def make_handler(func, buttons_intro, logging, logger):
     def f(bot, update):
-        try:
-            user_id = update.effective_message['from_user']['id']
-            config = CONFIG.get_config(user_id)
+        user_id = update.effective_message['from_user']['id']
+        config = CONFIG.get_config(user_id)
+        if len(signature(func).parameters) > 0:
             msg = func(config)
-            send_message(msg, buttons_intro, bot, update, logging, logger)
-        except BaseException as ex:
-            ex_type, ex_value, ex_traceback = sys.exc_info()
-            trace_back = traceback.extract_tb(ex_traceback)
-            stack_trace = [('File : %s\n'
-                            '\tFunction: %s\n'
-                            '\tLine: %s\n'
-                            '\tMessage: %s)') % (t[0], t[1], t[2], t[3])
-                           for t in trace_back]
-            print('{0} ({1})'.format(ex_type.__name__, ex_value))
-            for s in stack_trace:
-                print(s)
+        else:
+            msg = func()
+        send_message(msg, buttons_intro, bot, update, logging, logger)
     return f
 
 def send_message(msg, buttons_intro, bot, update, logging, logger):
-    try:
-        if logging:
-            log_answer(update, logger, meta=msg.meta)
+    if logging:
+        log_answer(update, logger, meta=msg.meta)
 
-        has_buttons = (msg.buttons is not None) and len(msg.buttons) > 0
-        has_media = (msg.image is not None) or (msg.image_url is not None)
-        has_text = msg.message is not None
+    has_buttons = (msg.buttons is not None) and len(msg.buttons) > 0
+    has_media = (msg.image is not None) or (msg.image_url is not None)
+    has_text = msg.message is not None
 
-        if has_media:
-            photo = msg.image_url \
-                    if msg.image_url is not None \
-                    else open(msg.image, 'rb')
-            if has_text:
-                if msg.message_media_relation == 0:   #  CAPTION_ABOVE
-                    bot.send_message(chat_id=update.message.chat_id,
-                                     text=msg.message)
-                    bot.send_photo(chat_id=update.message.chat_id,
-                                   photo=photo)
-                else:                                 #  CAPTION_BELOW
-                    bot.send_photo(chat_id=update.message.chat_id,
-                                   photo=photo)
-                    bot.send_message(chat_id=update.message.chat_id,
-                                     text=msg.message)
-            else:
-                bot.send_photo(chat_id=update.message.chat_id, photo=photo)
+    if has_media:
+        photo = msg.image_url \
+                if msg.image_url is not None \
+                else open(msg.image, 'rb')
+        if has_text:
+            if msg.message_media_relation == 0:   #  CAPTION_ABOVE
+                bot.send_message(chat_id=update.message.chat_id,
+                                 text=msg.message)
+                bot.send_photo(chat_id=update.message.chat_id,
+                               photo=photo)
+            else:                                 #  CAPTION_BELOW
+                bot.send_photo(chat_id=update.message.chat_id,
+                               photo=photo)
+                bot.send_message(chat_id=update.message.chat_id,
+                                 text=msg.message)
         else:
-            bot.send_message(chat_id=update.message.chat_id, text=msg.message)
+            bot.send_photo(chat_id=update.message.chat_id, photo=photo)
+    else:
+        bot.send_message(chat_id=update.message.chat_id, text=msg.message)
 
-        if has_buttons:
-            btns = []
-            for x in msg.buttons:
-                s = '{}|'.format(x) + '|'.join(get_user_info(update))
-                btn = InlineKeyboardButton(x, callback_data=s)
-                btns.append(btn)
-            keyboard = InlineKeyboardMarkup([btns])
-            update.message.reply_text(buttons_intro,
-                                      reply_markup=keyboard)
-    except BaseException as ex:
-        ex_type, ex_value, ex_traceback = sys.exc_info()
-        trace_back = traceback.extract_tb(ex_traceback)
-        stack_trace = [('File : %s\n'
-                        '\tFunction: %s\n'
-                        '\tLine: %s\n'
-                        '\tMessage: %s)') % (t[0], t[1], t[2], t[3])
-                       for t in trace_back]
-        print('{0} ({1})'.format(ex_type.__name__, ex_value))
-        for s in stack_trace:
-            print(s)
+    if has_buttons:
+        btns = []
+        for x in msg.buttons:
+            s = '{}|'.format(x) + '|'.join(get_user_info(update))
+            btn = InlineKeyboardButton(x, callback_data=s)
+            btns.append(btn)
+        keyboard = InlineKeyboardMarkup([btns])
+        update.message.reply_text(buttons_intro,
+                                  reply_markup=keyboard)
 
 def make_buttons_processor(choice_confirmation_label, logging, logger):
     def f(bot, update):
