@@ -16,27 +16,107 @@ import traceback
 CONFIG = ConfigLogger()
 
 
-def make_text_handler(s):
+#  =-=-=-=-=-  EXTRACTING META INFO FROM THE CHAT  -=-=-=-=-=
+
+def get_user_info(update):
+    m = update.effective_message
+    uid = str(m['from_user']['id']) \
+          if m['from_user']['id'] is not None \
+          else ''
+    uname = str(m['from_user']['username']) \
+            if m['from_user']['username'] is not None \
+            else ''
+    fname = str(m['from_user']['first_name']) \
+            if m['from_user']['first_name'] is not None \
+            else ''
+    lname = str(m['from_user']['last_name']) \
+            if m['from_user']['last_name'] is not None \
+            else ''
+    mid = str(m['message_id'])
+    input_text = str(update.message.text)
+    is_image = str(int(len(m.photo) > 0))
+    return uid, uname, fname, lname, mid, input_text, is_image
+
+def get_chat_info(update):
+    m = update.effective_message
+    mid = str(m['message_id'])
+    dt = str(m['date'])
+    cid = str(m['chat']['id'])
+    return mid, dt, cid
+
+def log_answer(update, logger, meta=''):
+    uid, uname, fname, lname, _, input_text, is_image = get_user_info(update)
+    mid, dt, cid = get_chat_info(update)
+    logger.record(uid, uname, fname, lname,
+                  cid, mid, dt,
+                  input_text, is_image, meta, '')  # button
+
+def log_voting(update, logger, meta=''):
+    query = update.callback_query
+    btn_text, uid, uname, fname, lname, mid, input_text, is_image = query\
+                                                                    .data\
+                                                                    .split('|')
+    _, dt, cid = get_chat_info(update)
+    logger.record(uid, uname, fname, lname,
+                  cid, mid, dt,
+                  '', is_image, meta, btn_text)
+
+#  =-=-=-=-=-  MAKING HANDLERS  -=-=-=-=-=
+
+def make_text_handler(s, logging, logger):
     def f(bot, update):
+        if logging:
+            log_answer(update, logger)
         bot.send_message(chat_id=update.message.chat_id, text=s)
     return f
 
-def make_photo_handler(func):
+def make_photo_handler(func, buttons_intro, logging, logger):
     def f(bot, update):
-        user_id = update.effective_message['from_user']['id']
-        config = CONFIG.get_config(user_id)
-        buffer = io.BytesIO()
-        bot.getFile(update.message.photo[-1].file_id).download(out=buffer)
-        im = Image.open(buffer)
-        func(im, config)
+        try:
+            user_id = update.effective_message['from_user']['id']
+            config = CONFIG.get_config(user_id)
+            buffer = io.BytesIO()
+            bot.getFile(update.message.photo[-1].file_id).download(out=buffer)
+            im = Image.open(buffer)
+            msg = func(im, config)
+            send_message(msg, buttons_intro, bot, update, logging, logger)
+        except BaseException as ex:
+            ex_type, ex_value, ex_traceback = sys.exc_info()
+            trace_back = traceback.extract_tb(ex_traceback)
+            stack_trace = [('File : %s\n'
+                            '\tFunction: %s\n'
+                            '\tLine: %s\n'
+                            '\tMessage: %s)') % (t[0], t[1], t[2], t[3])
+                           for t in trace_back]
+            print('{0} ({1})'.format(ex_type.__name__, ex_value))
+            for s in stack_trace:
+                print(s)
     return f
 
-def make_handler(func, buttons_intro):
+def make_handler(func, buttons_intro, logging, logger):
     def f(bot, update):
-        user_id = update.effective_message['from_user']['id']
-        config = CONFIG.get_config(user_id)
+        try:
+            user_id = update.effective_message['from_user']['id']
+            config = CONFIG.get_config(user_id)
+            msg = func(config)
+            send_message(msg, buttons_intro, bot, update, logging, logger)
+        except BaseException as ex:
+            ex_type, ex_value, ex_traceback = sys.exc_info()
+            trace_back = traceback.extract_tb(ex_traceback)
+            stack_trace = [('File : %s\n'
+                            '\tFunction: %s\n'
+                            '\tLine: %s\n'
+                            '\tMessage: %s)') % (t[0], t[1], t[2], t[3])
+                           for t in trace_back]
+            print('{0} ({1})'.format(ex_type.__name__, ex_value))
+            for s in stack_trace:
+                print(s)
+    return f
 
-        msg = func(config)
+def send_message(msg, buttons_intro, bot, update, logging, logger):
+    try:
+        if logging:
+            log_answer(update, logger, meta=msg.meta)
 
         has_buttons = (msg.buttons is not None) and len(msg.buttons) > 0
         has_media = (msg.image is not None) or (msg.image_url is not None)
@@ -63,19 +143,32 @@ def make_handler(func, buttons_intro):
             bot.send_message(chat_id=update.message.chat_id, text=msg.message)
 
         if has_buttons:
-            msg_id = str(update.message.message_id)
-            keyboard = [[InlineKeyboardButton(x, callback_data='{0}_{1}'\
-                                             .format(x, msg_id))
-                        for x in msg.buttons]]
-            keyboard = InlineKeyboardMarkup(keyboard)
+            btns = []
+            for x in msg.buttons:
+                s = '{}|'.format(x) + '|'.join(get_user_info(update))
+                btn = InlineKeyboardButton(x, callback_data=s)
+                btns.append(btn)
+            keyboard = InlineKeyboardMarkup([btns])
             update.message.reply_text(buttons_intro,
                                       reply_markup=keyboard)
-    return f
+    except BaseException as ex:
+        ex_type, ex_value, ex_traceback = sys.exc_info()
+        trace_back = traceback.extract_tb(ex_traceback)
+        stack_trace = [('File : %s\n'
+                        '\tFunction: %s\n'
+                        '\tLine: %s\n'
+                        '\tMessage: %s)') % (t[0], t[1], t[2], t[3])
+                       for t in trace_back]
+        print('{0} ({1})'.format(ex_type.__name__, ex_value))
+        for s in stack_trace:
+            print(s)
 
-def make_buttons_processor(choice_confirmation_label):
+def make_buttons_processor(choice_confirmation_label, logging, logger):
     def f(bot, update):
+        if logging:
+            log_voting(update, logger)
         query = update.callback_query
-        text = choice_confirmation_label.format(query.data.split('_')[0])
+        text = choice_confirmation_label.format(query.data.split('|')[0])
         bot.edit_message_text(text=text,
                               chat_id=query.message.chat_id,
                               message_id=query.message.message_id)
@@ -113,9 +206,10 @@ class TelegramBot():
 
         self.token = token
 
+        self.logger = None
         self.logging = False
         if not (db_path is None):
-            self.logger = TelegramLogger(db_path)
+            self.logger = SQLiteLogger(db_path)
             self.logging = True
 
         self.updater = Updater(token=self.token)
@@ -155,7 +249,9 @@ class TelegramBot():
         # Buttons
         conf = self._button_press_confirmation_label
         self.dispatcher.add_handler(
-            CallbackQueryHandler(make_buttons_processor(conf)
+            CallbackQueryHandler(make_buttons_processor(conf,
+                                                        self.logging,
+                                                        self.logger)
                                 ))
         self.resume()
 
@@ -166,14 +262,26 @@ class TelegramBot():
         if self.command_with_name(name) is None:
             self.dispatcher.add_handler(
                 CommandHandler(name,
-                               make_handler(f, buttons_intro=label)))
+                               make_handler(f,
+                                            label,
+                                            self.logging,
+                                            self.logger)))
         else:
             command = self.command_with_name(name)
-            command.callback = make_handler(f, buttons_intro=label)
+            command.callback = make_handler(f,
+                                            label,
+                                            self.logging,
+                                            self.logger)
 
     def register_photo_handler(self, f):
-        self.dispatcher.add_handler(MessageHandler(Filters.photo,
-                                                   make_photo_handler(f)))
+        label = self._button_press_invitation_label
+        self.dispatcher.add_handler(
+                MessageHandler(Filters.photo,
+                               make_photo_handler(f,
+                                                  label,
+                                                  self.logging,
+                                                  self.logger
+                                                  )))
 
     def command_with_name(self, name):
         for command in self.dispatcher.handlers[0]:
@@ -222,15 +330,22 @@ class TelegramBot():
     def _set_text_command(self, name, return_text):
         if len(self.dispatcher.handlers) == 0:
             self.dispatcher.add_handler(
-                CommandHandler(name, make_text_handler(return_text))
+                CommandHandler(name,
+                               make_text_handler(return_text,
+                                                 self.logging,
+                                                 self.logger))
             )
             return
         was_found = False
         for command in self.dispatcher.handlers[0]:
             if type(command) == CommandHandler and command.command[0] == name:
                 was_found = True
-                command.callback = make_text_handler(return_text)
+                command.callback = make_text_handler(return_text,
+                                                     self.logging,
+                                                     self.logger)
         if not was_found:
             self.dispatcher.add_handler(
-                CommandHandler(name, make_text_handler(return_text))
+                CommandHandler(name, make_text_handler(return_text,
+                                                       self.logging,
+                                                       self.logger))
             )
