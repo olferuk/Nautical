@@ -1,4 +1,4 @@
-# Spindrift
+# Pebble
 
 The tool to make lightweight Telegram bots from plain Python functions
 
@@ -21,7 +21,7 @@ The tool to make lightweight Telegram bots from plain Python functions
 [Up](#Table-of-contents)
 
 ```python
-git clone https://github.com/EnlightenedCSF/Spindrift.git
+git clone https://github.com/EnlightenedCSF/Pebble.git
 cd <cloned_repo>
 pip install .
 ```
@@ -31,8 +31,8 @@ pip install .
 
 Preparation:
 ```python
-from spindrift.bot import TelegramBot
-from spindrift.message import Message
+from pebble.bot import TelegramBot
+from pebble.message import Message
 
 bot = TelegramBot(token='<YOUR_TOKEN>', config_path='./config.db')
 ```
@@ -124,7 +124,7 @@ Images the one receives are of type `PIL.JpegImagePlugin.JpegImageFile`.
 ### 4. Controlling the execution with parameters
 [Up](#Table-of-contents)
 
-To help bot clients control the execution, Spindrift offers parameters:
+To help bot clients control the execution, Pebble offers parameters:
 
 ```python
 def function_to_control(config):
