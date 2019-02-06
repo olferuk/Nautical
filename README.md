@@ -33,14 +33,14 @@ Preparation:
 ```python
 from spindrift.bot import TelegramBot
 from spindrift.message import Message
+
+bot = TelegramBot(token='<YOUR_TOKEN>', config_path='./config.db')
 ```
 
 ### 0. Start, help and other default commands
 [Up](#Table-of-contents)
 
-```python
-bot = TelegramBot(token='<YOUR_TOKEN>', config_path='./config.db')
-```
+Create a bot like was shown in the snippet above. Your token can be acquired from the @bot_father in Telegram.
 
 Bot is running and ready to listen to your commands! Let's check:
 
@@ -72,8 +72,6 @@ bot.help_message = 'Custom help message'
 [Up](#Table-of-contents)
 
 ```python
-bot = TelegramBot(token='<YOUR_TOKEN>', config_path='./config.db')
-
 def hello_world():
     return Message(text='Hello world!')
 
@@ -97,8 +95,6 @@ a local file (provide a fullpath to the picture) and `image_url` to point to the
 Here is the example:
 
 ```python
-bot = TelegramBot(token='<YOUR_TOKEN>', config_path='./config.db')
-
 def local_funny_meme():
     return Message(image='/Users/yourName/path/to/a/meme')
 
@@ -117,8 +113,6 @@ bot.register_command('online_meme', funny_online_meme)
 Processing images is easy:
 
 ```python
-bot = TelegramBot(token='<YOUR_TOKEN>', config_path='./config.db')
-
 def process_photo(img):
   print('I got image of size {}'.format(img))
 
@@ -133,8 +127,6 @@ Images the one receives are of type `PIL.JpegImagePlugin.JpegImageFile`.
 To help bot clients control the execution, Spindrift offers parameters:
 
 ```python
-bot = TelegramBot(token='<YOUR_TOKEN>', config_path='./config.db')
-
 def function_to_control(config):
   x = int(config['x'])
   print('The x value is {}'.format(x))
@@ -172,11 +164,122 @@ x is greater than 5
 __NB__: parameters are individual for each user, so assigning different values to the parameter with
 the same name does not affect any other user's settings.
 
+User parameters are stored in SQLite-file, name of which you can specify via `config_path` parameter.
+
 ### 5. Reacting to buttons pressed
 [Up](#Table-of-contents)
 
+You can add buttons to the message easily:
+
+```python
+def joke():
+    return Message(message='A bear once met a burning car in the forest. He sat in it and burned alive.',
+                   buttons=['😀 Ahahah', '😒 Meh'])
+
+bot.register_command('joke', joke)
+```
+
+Their goal is to help tracking users' actions. This topic is going to be described in the next section.
+Hovewer, setting callbacks to buttons pressing is not allowed yet. Stay tuned!
+
 ### 6. Logging events to SQLite
 [Up](#Table-of-contents)
+
+To known what bot's clients do, the one can enable logging.
+
+#### 6.1. Simple logging
+
+
+```python
+bot = TelegramBot(token='<YOUR_TOKEN>', config_path='config.db', db_path='logs.db')
+
+def hello():
+  return Message('Hello world!')
+
+def greet(config):
+  return Message('Hello, {}!'.format(config['name']))
+
+
+bot.register_command('hello', hello)
+bot.register_command('greet', greet)
+
+# Later in the Telegram:
+
+> /hello
+
+Hello, world!
+
+> /set name Alex
+
+Parameter "name" successfully set to "Alex"
+
+> /greet
+
+Hello, Alex!
+```
+
+There are two tables in `logs.db`: `user` and `record`. Every user's info will be recorded into the first one:
+
+
+| __user_id__  | __user_name__ | __first_name__ | __last_name__ |
+|--------------|---------------|----------------|---------------|
+| 81910644     |               | Alexander      | Olferuk       |
+
+And the `record` will contain full history:
+
+| __user_id__ | __chat_id__ | __message_id__ | __dt__              | __message__    | __is_image__ | __meta__ | __button__ |
+|-------------|-------------|----------------|---------------------|----------------|--------------|----------|------------|
+| 81910644    | 81910628    | 598            | 2019-02-06 15:49:06 | /hello         | 0            |          |            |
+| 81910644    | 81910628    | 600            | 2019-02-06 15:49:15 | /set name Alex | 0            |          |            |
+| 81910644    | 81910628    | 602            | 2019-02-06 15:49:22 | /greet         | 0            |          |            |
+
+#### 6.2. Using field meta
+
+Let us imagine that the bot should tell one of a million funny jokes after it recieve `/joke` command.
+You, as a programmer, are interested, which jokes were shown to a certain user. It is only necessary to
+track joke's index in the collection. That's where parameter `meta` come in handy:
+
+```python
+JOKES = [...]
+
+def show_random_joke():
+  index = np.random.randint(len(JOKES))
+  return Message(JOKES[index], meta=index)
+
+bot.register_command('joke', show_random_joke)
+```
+
+Table `record`'s contents:
+
+| __user_id__ | __chat_id__ | __message_id__ | __dt__              | __message__    | __is_image__ | __meta__ | __button__ |
+|-------------|-------------|----------------|---------------------|----------------|--------------|----------|------------|
+| 81910644    | 81910628    | 604            | 2019-02-06 16:18:08 | /joke          | 0            | 5        |            |
+| 81910644    | 81910628    | 606            | 2019-02-06 16:18:11 | /joke          | 0            | 7        |            |
+| 81910644    | 81910628    | 608            | 2019-02-06 16:18:15 | /joke          | 0            | 0        |            |
+
+#### 6.3. Registering buttons taps
+
+Let's go back to the example with a joke about bear:
+
+```python
+def joke():
+    return Message(message='A bear once met a burning car in the forest. He sat in it and burned alive.',
+                   buttons=['😀 Ahahah', '😒 Meh'])
+
+bot.register_command('bear', joke)
+```
+
+Now the rating buttons taps are recorded:
+
+| __user_id__ | __chat_id__ | __message_id__ | __dt__              | __message__    | __is_image__ | __meta__ | __button__ |
+|-------------|-------------|----------------|---------------------|----------------|--------------|----------|------------|
+| 81910644    | 81910628    | 610            | 2019-02-06 16:22:10 | /bear          |  0           |          |           |
+| 81910644    | 81910628    | 610            | 2019-02-06 16:22:10 |                |  0           |          | 😒 Meh     |
+| 81910644    | 81910628    | 613            | 2019-02-06 16:22:16 | /bear          |  0           |          |           |
+| 81910644    | 81910628    | 613            | 2019-02-06 16:22:16 |                |  0           |          | 😀 Ahahah  |
+
+The pair "bot's answer" and "user rating" is easily determined considering that `message_id` values are the
+same in each pair.
 
 ## Contributors
 [Up](#Table-of-contents)
