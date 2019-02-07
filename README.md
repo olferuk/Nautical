@@ -2,7 +2,7 @@
 
 The tool to make lightweight Telegram bots from plain Python functions
 
-🇷🇺 [Здесь](#README_ru.md) есть русскоязычная версия этого README.
+🇷🇺 [Здесь](README_ru.md) есть русскоязычная версия этого README.
 
 ## Table of contents
 
