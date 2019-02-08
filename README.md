@@ -1,5 +1,7 @@
 # Pebble
 
+[![MIT license](https://img.shields.io/badge/License-MIT-blue.svg)](https://lbesson.mit-license.org/)
+
 The tool to make lightweight Telegram bots from plain Python functions
 
 🇷🇺 [Здесь](README_ru.md) есть русскоязычная версия этого README.
