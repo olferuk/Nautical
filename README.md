@@ -156,7 +156,7 @@ x is less than or equal to 5
 
 > /set x 10
 
-Successfully set parameter "x" to "2"
+Successfully set parameter "x" to "10"
 
 > /test
 
