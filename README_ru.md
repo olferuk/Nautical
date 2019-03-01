@@ -1,4 +1,4 @@
-# Pebble
+# Nautical
 
 Утилита для создания легковесных Telegram-ботов из Python-функций.
 
@@ -20,7 +20,7 @@
 [К содержанию](#Содержание)
 
 ```bash
-git clone https://github.com/EnlightenedCSF/Pebble.git
+git clone https://github.com/olferuk/Nautical.git
 cd <cloned_repo>
 pip install .
 ```
@@ -30,8 +30,8 @@ pip install .
 
 Подготовка:
 ```python
-from pebble.bot import TelegramBot
-from pebble.message import Message
+from nautical.bot import TelegramBot
+from nautical.message import Message
 
 bot = TelegramBot(token='<YOUR_TOKEN>', config_path='./config.db')
 ```
@@ -124,7 +124,7 @@ bot.register_photo_handler(process_photo)
 ### 4. Контроль выполнения функций с помощью параметров
 [К содержанию](#Содержание)
 
-Для того, чтобы пользователи могли контролировать бота, Pebble предоставляет механизм параметров:
+Для того, чтобы пользователи могли контролировать бота, Nautical предоставляет механизм параметров:
 
 ```python
 def function_to_control(config):

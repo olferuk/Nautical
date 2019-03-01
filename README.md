@@ -1,4 +1,4 @@
-# Pebble
+# Nautical
 
 [![MIT license](https://img.shields.io/badge/License-MIT-blue.svg)](https://lbesson.mit-license.org/)
 
@@ -23,7 +23,7 @@ The tool to make lightweight Telegram bots from plain Python functions
 [Up](#Table-of-contents)
 
 ```python
-git clone https://github.com/EnlightenedCSF/Pebble.git
+git clone https://github.com/olferuk/Nautical.git
 cd <cloned_repo>
 pip install .
 ```
@@ -33,8 +33,8 @@ pip install .
 
 Preparation:
 ```python
-from pebble.bot import TelegramBot
-from pebble.message import Message
+from nautical.bot import TelegramBot
+from nautical.message import Message
 
 bot = TelegramBot(token='<YOUR_TOKEN>', config_path='./config.db')
 ```
@@ -126,7 +126,7 @@ Images the one receives are of type `PIL.JpegImagePlugin.JpegImageFile`.
 ### 4. Controlling the execution with parameters
 [Up](#Table-of-contents)
 
-To help bot clients control the execution, Pebble offers parameters:
+To help bot clients control the execution, Nautical offers parameters:
 
 ```python
 def function_to_control(config):

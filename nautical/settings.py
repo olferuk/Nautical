@@ -6,7 +6,6 @@ import sys
 
 
 class ConfigLogger:
-
     def __init__(self):
         self.initialized = False
         self._create_table = '''CREATE TABLE IF NOT EXISTS config (
